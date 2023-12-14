@@ -145,15 +145,13 @@ print(decoded_string)
 
 
 class LinkLayer:
-    def __init__(self, ip, port, start_freq=18000, freq_step=250):
+    def __init__(self, start_freq=18000, freq_step=250):
         self.start_freq = start_freq
         self.freq_step = freq_step
         self.sampling_rate = 44100
         self.p = pyaudio.PyAudio()
         self.isReceiving = False
         self.isEstablished = False
-        self.IP = ip
-        self.port = port
 
     def transmit_string(self, data):
         data_list = string_to_binary(data)
@@ -194,32 +192,8 @@ class LinkLayer:
             else:
                 print("Currently receiving data, please wait...")
 
-    # def send_handshake(self):
-    #     while not self.isEstablished:
-    #         destinationIP = input("Enter destination IP: ")
-    #         destinationPort = input("Enter destination port: ")
-
-    #         handshake_data = self.IP + ":" + self.port + "->" + destinationIP + ":" + destinationPort
-    #         self.transmit_string(handshake_data)
-    #         self.isEstablished = True
-                                 
-    #         # response = self.wait_for_response()
-    #         # if response == "ACK":
-    #         #     self.isEstablished = True
-    #         # else:
-    #         #     print("Handshake failed, trying again..."))
-    def send_preamble(self):
-        preamble_data = "preamble"
-        self.transmit_string(preamble_data)
-    def send_postamble(self):
-        postamble_data = "postamble"
-        self.transmit_string(postamble_data)
-
     
-# create a link layer object
-ip = input("Enter IP address: ")
-port = input("Enter port number: ")
-link_layer = LinkLayer(ip, port)
+link_layer = LinkLayer()
 
 # Create a thread for sending data
 send_thread = threading.Thread(target=link_layer.send_data)
