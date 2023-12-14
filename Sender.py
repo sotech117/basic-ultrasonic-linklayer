@@ -1,6 +1,7 @@
 import numpy as np
 import pyaudio
 import threading
+from utils import *
 
 """
 Play a single frequency.
@@ -201,7 +202,7 @@ send_thread = threading.Thread(target=link_layer.send_data)
 # Start the threads
 send_thread.start()
 
-# take in range width, the number of bytes, and the bytes themsleve, and starting freq
+# take in range width, the number of bytes, and the bytes themselves, and starting freq
 
 # cmdline args: data, start freq, bytes per transmit, frequency range
 # 18500, 1000 range 
