@@ -12,10 +12,8 @@ Play a single frequency.
 :param samplingRate: Sampling rate in Hz.
 """
 def play_frequency(freq, amplitude, duration=1.0, samplingRate=44100, p=None):
-
     # Generate sample for the given frequency as a float32 array
     samples = (amplitude * np.sin(2*np.pi*np.arange(samplingRate*duration)*freq/samplingRate)).astype(np.float32).tobytes()
-
 
     # Open stream
     stream = p.open(format=pyaudio.paFloat32,
@@ -29,6 +27,36 @@ def play_frequency(freq, amplitude, duration=1.0, samplingRate=44100, p=None):
     stream.stop_stream()
     stream.close()
 
+    p.terminate()
+
+
+# def play_frequency(freq, amplitude, duration=1.0, samplingRate=44100):
+#     p = pyaudio.PyAudio()
+
+#     # Generate sample
+#     samples = np.sin(2 * np.pi * np.arange(samplingRate * duration) * freq / samplingRate)
+
+#     # Normalize
+#     max_amplitude = np.max(np.abs(samples))
+#     normalized_samples = (amplitude / max_amplitude) * samples
+
+#     # clip to [0.0, 1.0]
+#     normalized_samples = np.clip(normalized_samples, 0.0, 1.0)
+
+#     samples_bytes = normalized_samples.astype(np.float32).tobytes()
+
+#     stream = p.open(format=pyaudio.paFloat32,
+#                     channels=1,
+#                     rate=samplingRate,
+#                     output=True)
+
+#     stream.write(samples_bytes)
+
+#     # Stop and close the stream
+#     stream.stop_stream()
+#     stream.close()
+
+#     p.terminate()
 
 """
 Use threads to play multiple frequencies simultaneously.
@@ -39,6 +67,7 @@ Use threads to play multiple frequencies simultaneously.
 """
 def play_frequencies_separately(freq_map, duration=1.0, samplingRate=44100):
     p = pyaudio.PyAudio()
+
     threads = []
     for freq, amplitude in freq_map.items():
         thread = threading.Thread(target=play_frequency, args=(freq, amplitude, duration, samplingRate, p))

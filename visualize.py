@@ -43,13 +43,27 @@ class Test(object):
         scaled_spectrum = np.abs(spectrum)
         scaled_spectrum = scaled_spectrum / (np.linalg.norm(scaled_spectrum) + 1e-16)
 
-        # get the index of the max
-        np_max = max(scaled_spectrum)
-        max_index = np.where(scaled_spectrum == np_max)[0][0]
+        # FIXME: update to self values, given if ur a sender or receiver
+        starting_freq = 18000
+        end_freq = 20000
+        freq_to_index_ratio = (self.CHUNK - 1) / self.RATE
+        # only accept the scaled spectrum from our starting range to 20000 Hz
+        starting_range_index = int(starting_freq * freq_to_index_ratio)
+        ending_range_index = int(end_freq * freq_to_index_ratio)
+        print(starting_freq, end_freq, starting_range_index, ending_range_index)
+        restricted_spectrum = scaled_spectrum[starting_range_index:ending_range_index + 1]
 
-        # the index corresponds to the following linspace
-        index_to_freq = np.linspace(0, self.RATE, self.CHUNK)
-        return index_to_freq[max_index], scaled_spectrum
+        # get the n indices of the max peaks, within our confined spectrum
+        # FIXME: update to self values
+        bytes = 1
+        num_bits = bytes * 8 + 2
+        top8_indices = np.argpartition(restricted_spectrum, -num_bits)[-num_bits:]
+
+        # map the top 8 to indices to frequencies
+        top8_freqs = [int((top8_indices[i] + starting_freq) / freq_to_index_ratio) for i in range(len(top8_indices))]
+
+        # print(index_to_freq[max_index], max_index, max_index * self.RATE / (self.CHUNK - 1))
+        return top8_freqs[0], scaled_spectrum
 
     def read_audio_stream(self):
         data = self.stream.read(self.CHUNK)
@@ -61,10 +75,8 @@ class Test(object):
         while not self.pause:
             waveform = self.read_audio_stream()
             freq_max, scaled_spectrum = self.get_fundamental_frequency(waveform)
-            if 250 < freq_max < 550:
-                if freq_max not in self.seenvalues:
-                    print(freq_max)
-                self.seenvalues.add(freq_max)
+            if freq_max not in self.seenvalues:
+                print(freq_max)
 
             # update figure canvas if wanted
             if graphics:
