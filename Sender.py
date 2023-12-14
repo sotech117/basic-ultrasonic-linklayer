@@ -27,36 +27,8 @@ def play_frequency(freq, amplitude, duration=1.0, samplingRate=44100, p=None):
     stream.stop_stream()
     stream.close()
 
-    p.terminate()
+    # p.terminate()
 
-
-# def play_frequency(freq, amplitude, duration=1.0, samplingRate=44100):
-#     p = pyaudio.PyAudio()
-
-#     # Generate sample
-#     samples = np.sin(2 * np.pi * np.arange(samplingRate * duration) * freq / samplingRate)
-
-#     # Normalize
-#     max_amplitude = np.max(np.abs(samples))
-#     normalized_samples = (amplitude / max_amplitude) * samples
-
-#     # clip to [0.0, 1.0]
-#     normalized_samples = np.clip(normalized_samples, 0.0, 1.0)
-
-#     samples_bytes = normalized_samples.astype(np.float32).tobytes()
-
-#     stream = p.open(format=pyaudio.paFloat32,
-#                     channels=1,
-#                     rate=samplingRate,
-#                     output=True)
-
-#     stream.write(samples_bytes)
-
-#     # Stop and close the stream
-#     stream.stop_stream()
-#     stream.close()
-
-#     p.terminate()
 
 """
 Use threads to play multiple frequencies simultaneously.
@@ -191,14 +163,10 @@ class LinkLayer:
             if not self.isReceiving:
                 user_input = input("Enter data to send: ")
                 if user_input == "exit" or user_input == "q":
-                    self.exit()
+                    break
                 self.transmit_string(user_input)
             else:
                 print("Currently receiving data, please wait...")
-    def exit(self):
-        self.stream.stop_stream()
-        self.stream.close()
-        self.p.terminate()
 
     
 # take in range width, the number of bytes, and the bytes themselves, and starting freq
