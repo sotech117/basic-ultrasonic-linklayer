@@ -4,7 +4,7 @@ import threading
 from utils import *
 
 class Sender:
-    def __init__(self, start_freq=19000):
+    def __init__(self, start_freq=18500):
         # initialize frequency related variables with default values
         self.start_freq = start_freq
         self.freq_range = 500
