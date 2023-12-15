@@ -3,15 +3,17 @@ import struct
 import numpy as np
 import pyaudio
 import threading
+
+import utils
 from utils import *
 import time
 from collections import Counter
 
 
 class Recv:
-    def __init__(self, start_freq=19500):
+    def __init__(self, start_freq=18000):
         self.start_freq = start_freq
-        self.freq_range = 500
+        self.freq_range = 2000
         self.sampling_rate = 44100
         self.p = pyaudio.PyAudio()
         self.bytes_per_transmit = 1
@@ -46,45 +48,92 @@ class Recv:
         data_int = struct.unpack(str(self.CHUNK) + 'i', data)
         return data_int
 
+    def print_data(self, data):
+        print(data)
+
+    def safe_check_byte(self, bytes_seen):
+        safe_byte = []
+
+        if len(bytes_seen) > 0:
+            for col in range(len(bytes_seen[0])):
+                count1s = 0
+                count0s = 0
+                for row in range(len(bytes_seen)):
+                    bit = bytes_seen[row][col]
+                    if bit == '1':
+                        count1s += 1
+                    else:
+                        count0s += 1
+                if count1s > count0s:
+                    safe_byte.append('1')
+                else:
+                    safe_byte.append('0')
+
+        return safe_byte
+
     def listen(self):
-        char_counter = Counter()
-        start_time = time.time()
-        word = ''
-        try:
-            while True:
-                # data = self.read_audio_stream()
-                # recv_freq_range = self.freq_range / 2
-                # wave_to_bits(data, self.start_freq, recv_freq_range, self.bytes_per_transmit)
-                current_time = time.time()
-                if current_time - start_time >= 1:  # Every second
-                    # Find the most common character
-                    most_common_char, _ = char_counter.most_common(1)[0] if char_counter else ('', 0)
-                    # print(f"Most common character in the last second: {most_common_char}")
-                    word += most_common_char
-                    print(f"Accumulated word: {word}")
-                    char_counter.clear()  # Reset for the next second
-                    start_time = current_time
+        prev_is_data_flag = '0'
+        prev_is_new_byte_flag = '0'
 
-                data = self.read_audio_stream()
-                recv_freq_range = self.freq_range / 2
-                list, letter = wave_to_bits(data, self.start_freq, recv_freq_range, self.bytes_per_transmit)
+        bytes_seen = []
+        recv_buffer = []
 
-                # send back the data
-                data_list = string_to_binary(letter)
-                send_freq_range = self.freq_range / 2
-                play_data(data_list, self.start_freq, send_freq_range, self.bytes_per_transmit, self.streamSend)
+        while True:
+            data = self.read_audio_stream()
+            recv_freq_range = self.freq_range / 2
+            bits = wave_to_bits(data, self.start_freq, recv_freq_range, self.bytes_per_transmit)
 
-                if letter:
-                    char_counter[letter] += 1
+            # handle the data flags
+            is_data_flag = bits[-1]
+            is_new_byte_flag = bits[-2]
 
-        except KeyboardInterrupt:
-            print("Stopping...")
-        finally:
-            self.stream.stop_stream()
-            self.stream.close()
-            self.streamSend.stop_stream()
-            self.streamSend.close()
-            self.p.terminate()
+            if prev_is_data_flag == '0' and is_data_flag == '1':
+                prev_is_data_flag = is_data_flag
+                # just started receiving data
+                bytes_seen = []
+                recv_buffer = []
+
+            is_data_flag = bits[-1]
+            if prev_is_data_flag == '0' and is_data_flag == '0':
+                prev_is_data_flag = is_data_flag
+
+                # just waiting for new data
+                continue
+
+            if prev_is_data_flag == '1' and is_data_flag == '0':
+                prev_is_data_flag = is_data_flag
+
+                # just finished the last byte of data, add it to buffer, then write buffer to terminal
+                recv_buffer.append(self.safe_check_byte(bytes_seen))
+
+                # FIXME: what to do with buffer?
+                # for now print buffer as string
+                buffer_as_string = ''.join([utils.receive_string(byte) for byte in recv_buffer])
+                print("recv_buffer: ", buffer_as_string)
+
+                # clear data structure & buffer
+                continue
+
+            # at this point, we know we are receiving data
+            if prev_is_new_byte_flag == is_new_byte_flag:
+                prev_is_new_byte_flag = is_new_byte_flag
+
+                # we are still receiving the same byte, store it in the data structure
+                byte = bits[:-2]
+                bytes_seen.append(byte)
+                continue
+            else:
+                prev_is_new_byte_flag = is_new_byte_flag
+
+                # we are receiving a new byte, so we need to write the old byte to the recv buffer
+                recv_buffer.append(self.safe_check_byte(bytes_seen))
+                # clear the data structure
+                bytes_seen = []
+
+                # append the new byte to the data structure
+                byte = bits[:-2]
+                bytes_seen.append(byte)
+                continue
 
 def main():
     recv = Recv()
@@ -93,51 +142,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-# import utils as u
-# import time
-# from collections import Counter
-
-# def main():
-#     p = u.pyaudio.PyAudio()
-#     start_freq = 19800
-#     freq_range = 200
-#     bytes_per_transmit = 1
-
-#     stream = p.open(
-#         format=u.pyaudio.paInt32,
-#         channels=1,
-#         rate=44100,
-#         input=True,
-#         output=True,
-#         frames_per_buffer=2048 * 2,
-#     )
-
-#     char_counter = Counter()
-#     start_time = time.time()
-#     word = ''
-
-#     try:
-#         while True:
-#             current_time = time.time()
-#             if current_time - start_time >= 1:  # Every second
-#                 # Find the most common character
-#                 most_common_char, _ = char_counter.most_common(1)[0] if char_counter else ('', 0)
-#                 print(f"Most common character in the last second: {most_common_char}")
-#                 word += most_common_char
-#                 print(f"Accumulated word: {word}")
-#                 char_counter.clear()  # Reset for the next second
-#                 start_time = current_time
-
-#             data, success = u.receive_data(stream, start_freq, freq_range, bytes_per_transmit)
-#             if success:
-#                 char_counter[data] += 1
-
-#     except KeyboardInterrupt:
-#         print("Stopping...")
-#     finally:
-#         stream.stop_stream()
-#         stream.close()
-#         p.terminate()
-# if __name__ == "__main__":
-#     main()

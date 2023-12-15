@@ -32,11 +32,10 @@ def wave_to_bits(wave, starting_freq, freq_range, bytes_per_transmit, chunk=4096
 
     # TODO: remove
     byte = data[:8]
-    to_return = ''
     if data[-1] == '1':
-        to_return = receive_string(byte)
+        receive_string(byte)
 
-    return data, to_return
+    return data
 
 
 def calculate_send_frequencies(start_freq, freq_range, bytes_per_transmit):
@@ -95,7 +94,8 @@ def receive_string(binary):
         # print(chr(int(binary_string, 2)))
         return chr(int(binary_string, 2))
     except ValueError:
-        print("Error: Invalid binary data")
+        print("Warn: Invalid binary data: ", binary_string)
+        return 'X'
 
 def string_to_binary(data):
     data_list = []
