@@ -3,13 +3,13 @@ A project for cs1680 using sound waves to allow two nodes to share information w
 
 To run the sender, run the following command:
 ``` 
-python3 sender.py
+python3 Sender.py
 ```
 This will prompt the user for a message to send, and then send it to the receiver.
 
 To run the receiver, run the following command:
 ```
-python3 recv.py
+python3 Recv.py
 ```
 The receiver will listen for a message from the sender, and then print it to the console.
 
