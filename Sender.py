@@ -57,16 +57,6 @@ def play_frequencies_separately(freq_map, duration=1.0, samplingRate=44100):
 # data = "01101000 01100101 01101100 01101100 01101111"
 
 # convert string to binary representation
-"""
-:param data: A string of characters.
-:return: A list of binary strings.
-"""
-def string_to_binary(data):
-    data_list = []
-    for char in data:
-        binary_representation = format(ord(char), 'b').zfill(8)
-        data_list.append(binary_representation)
-    return data_list
 
 # transmit string 
 """
@@ -107,10 +97,10 @@ def receive_string(data, start_freq=18000, freq_step=250):
 
 # Example usage
 # data for the letter h
-# 01101000
-data = [18250, 18500, 19000]
-decoded_string = receive_string(data)
-print(decoded_string)
+# # 01101000
+# data = [18250, 18500, 19000]
+# decoded_string = receive_string(data)
+# print(decoded_string)
 
 
 # transmit_string("h")
