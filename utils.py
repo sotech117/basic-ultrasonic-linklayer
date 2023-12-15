@@ -4,6 +4,38 @@
 import numpy as np
 import pyaudio
 import threading
+from scipy.fftpack import fft
+
+
+def wave_to_bits(wave, starting_freq, freq_range, bytes_per_transmit, chunk=4096, rate=44100):
+    spectrum = fft(wave)
+    spectrum = np.abs(spectrum)
+    spectrum = spectrum / (np.linalg.norm(spectrum) + 1e-16)
+
+    # FIXME: update to self values, given if ur a sender or receiver
+    starting_freq = starting_freq
+    end_freq = starting_freq + freq_range
+    freq_to_index_ratio = (chunk - 1) / rate
+
+    # only accept the scaled spectrum from our starting range to 20000 Hz
+    starting_range_index = int(starting_freq * freq_to_index_ratio)
+    ending_range_index = int(end_freq * freq_to_index_ratio)
+    restricted_spectrum = spectrum[starting_range_index:ending_range_index + 1]
+
+    # get the n indices of the max peaks of amplitude greater than .125, within our confined spectrum
+    indices = np.argwhere(restricted_spectrum > .125)
+
+    freqs = [int((indices[i] + starting_range_index) / freq_to_index_ratio) for i in range(len(indices))]
+
+    # convert the frequencies to bits
+    data = frequencies_to_bits(freqs, calculate_send_frequencies(starting_freq, freq_range, bytes_per_transmit))
+
+    # TODO: remove
+    byte = data[:8]
+    if data[-1] == '1':
+        receive_string(byte)
+
+    return data
 
 
 def calculate_send_frequencies(start_freq, freq_range, bytes_per_transmit):
@@ -15,45 +47,46 @@ def calculate_send_frequencies(start_freq, freq_range, bytes_per_transmit):
         f = int(start_freq + (i + 1) * freq_interval)
         freq_list.append(f)
 
-    print(freq_list)
-
     return freq_list
 
 
-def frequencies_to_bytes(frequencies, expected_freqs):
+def frequencies_to_bits(frequencies, expected_freqs):
     # get the interval between frequencies, so we can clamp the range around them
     freq_interval = expected_freqs[1] - expected_freqs[0]
     plus_minus = freq_interval // 2
 
-    byte_list = ['0'] * len(expected_freqs)
+    bit_list = ['0'] * len(expected_freqs)
     for freq in frequencies:
         for i in range(len(expected_freqs)):
             # clamp the range around the frequency to the frequency
             if expected_freqs[i] - plus_minus <= freq < expected_freqs[i] + plus_minus:
-                byte_list[i] = '1'
+                bit_list[i] = '1'
 
-    return byte_list
+    return bit_list
 
-def play_data(data, start_freq, freq_step, bytes_per_transmit, p):
+
+def play_data(data, start_freq, freq_step, bytes_per_transmit, stream):
     freq_list = calculate_send_frequencies(start_freq, freq_step, bytes_per_transmit)
 
+    send_duration = 1.0
+
+    flip_flag = 0  # TODO: make this global between plays
     for byte in data:
+        byte = byte + str(flip_flag) + '1'
         print(byte)
         samples = None
         for i, bit in enumerate(byte):
             if bit == '1':
                 print(freq_list[i])
-                s = .125 * np.sin(2 * np.pi * np.arange(44100 * 10.0) * freq_list[i] / 44100)
+                s = .125 * np.sin(2 * np.pi * np.arange(44100 * send_duration) * freq_list[i] / 44100)
                 if samples is None:
                     samples = s
                 else:
                     samples = np.add(samples, s)
         if samples is not None:
-            print(samples)
-            stream = p.open(format=pyaudio.paFloat32, channels=1, rate=44100, output=True)
             stream.write(samples.astype(np.float32).tobytes())
-            stream.stop_stream()
-            stream.close()
+        flip_flag = (flip_flag + 1) % 2
+
 
 def receive_string(binary):
     binary_string = ''.join(binary)
