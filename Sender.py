@@ -2,6 +2,9 @@ import numpy as np
 import pyaudio
 import threading
 from utils import *
+import struct
+import time
+from collections import Counter
 
 """
 Play a single frequency.
@@ -42,7 +45,7 @@ Use threads to play multiple frequencies simultaneously.
 """
 
 
-def play_frequencies_separately(freq_map, duration=1.0, samplingRate=44100):
+def play_frequencies_separately(freq_map, duration=1, samplingRate=44100):
     p = pyaudio.PyAudio()
 
     threads = []
@@ -62,19 +65,6 @@ def play_frequencies_separately(freq_map, duration=1.0, samplingRate=44100):
 # data = "01101000 01100101 01101100 01101100 01101111"
 
 # convert string to binary representation
-"""
-:param data: A string of characters.
-:return: A list of binary strings.
-"""
-
-
-def string_to_binary(data):
-    data_list = []
-    for char in data:
-        binary_representation = format(ord(char), 'b').zfill(8)
-        data_list.append(binary_representation)
-    return data_list
-
 
 # transmit string
 """
@@ -105,7 +95,7 @@ return: A string of characters.
 """
 
 
-def receive_string(data, start_freq=18000, freq_step=250):
+def receive_string(data, start_freq=19000, freq_step=250):
     binary = ['0'] * 8
 
     for item in data:
@@ -140,6 +130,8 @@ class LinkLayer:
         self.isEstablished = False
         self.bytes_per_transmit = 1
         self.stream = self.p.open(format=pyaudio.paFloat32, channels=1, rate=44100, output=True)
+        self.streamListen = self.p.open(format=pyaudio.paFloat32, channels=1, rate=44100, input=True)
+        self.CHUNK = 2048 * 2
 
     def transmit_string(self, data):
         data_list = string_to_binary(data)
@@ -155,9 +147,38 @@ class LinkLayer:
                     self.stream.close()
                     break
                 self.transmit_string(user_input)
+                if not self.listen(user_input): self.transmit_string(user_input)
             else:
                 print("Currently receiving data, please wait...")
 
+    def read_audio_stream(self):
+        data = self.streamListen.read(self.CHUNK)
+        data_int = struct.unpack(str(self.CHUNK) + 'i', data)
+        return data_int
+    
+
+    def listen(self, data):
+        char_counter = Counter()
+        start_time = time.time()
+        word = ''
+        current_time = time.time()
+        if current_time - start_time >= 1:  # Every second
+            # Find the most common character
+            most_common_char, _ = char_counter.most_common(1)[0] if char_counter else ('', 0)
+            # print(f"Most common character in the last second: {most_common_char}")
+            word += most_common_char
+            print(f"Accumulated word: {word}")
+            char_counter.clear()  # Reset for the next second
+            start_time = current_time
+
+        # wait half a second
+        time.sleep(.5)
+        audio_data = self.read_audio_stream()
+        recv_freq_range = self.freq_range / 2
+        list, letter = wave_to_bits(audio_data, self.start_freq, recv_freq_range, self.bytes_per_transmit)
+
+        if letter == data: return True
+        return False
 
 def main():
     link_layer = LinkLayer()
