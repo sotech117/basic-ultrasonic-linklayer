@@ -117,46 +117,18 @@ print(decoded_string)
 
 
 class LinkLayer:
-    def __init__(self, start_freq=18000):
+    def __init__(self, start_freq=19800):
         self.start_freq = start_freq
-        self.freq_range = 1000
+        self.freq_range = 200
         self.sampling_rate = 44100
         self.p = pyaudio.PyAudio()
         self.isReceiving = False
         self.isEstablished = False
         self.bytes_per_transmit = 1
-        self.freq_range = 1000
 
     def transmit_string(self, data):
         data_list = string_to_binary(data)
-
-        # for i in range(len(data_list)):
-        #     freq_map = {}
-        #     start_freq = 18000
-        #     for j in range(len(data_list[i])):
-        #         if data_list[i][j] == "0":
-        #             freq_map[start_freq + j * 250] = 0.0
-                
-        #         if data_list[i][j] == "1":
-        #             freq_map[start_freq + j * 250] = 1.0
-            
-        #     # print(freq_map)
-        #     play_frequencies_separately(freq_map, duration=0.5)
         play_data(data_list, self.start_freq, self.freq_range, self.bytes_per_transmit, self.p)
-
-
-    def receive_string(self, data):
-        binary = ['0'] * 8
-
-        for item in data:
-            freqPosition = (item - self.start_freq) // self.freq_step
-            if 0 <= freqPosition < 8: binary[freqPosition] = '1'
-
-        binary_string = ''.join(binary)
-        try:
-            return chr(int(binary_string, 2))
-        except ValueError:
-            return "Error: Invalid binary data"
         
     def send_data(self):
         while True:

@@ -25,67 +25,39 @@ def frequencies_to_bytes(frequencies, expected_freqs):
     freq_interval = expected_freqs[1] - expected_freqs[0]
     plus_minus = freq_interval // 2
 
-    byte_list = [0] * len(frequencies)
+    byte_list = ['0'] * len(expected_freqs)
     for freq in frequencies:
-        for i in range(len(frequencies)):
+        for i in range(len(expected_freqs)):
             # clamp the range around the frequency to the frequency
             if expected_freqs[i] - plus_minus <= freq < expected_freqs[i] + plus_minus:
-                byte_list[i] = 1
+                byte_list[i] = '1'
 
     return byte_list
-
-
-def play_frequency(freq, p, duration=1.0, samplingRate=44100):
-    amplitude = .1  # Maximum amplitude
-    print(freq)
-    samples = (amplitude * np.sin(2 * np.pi * np.arange(samplingRate * duration) * freq / samplingRate)).astype(
-        np.float32).tobytes()
-    stream = p.open(format=pyaudio.paFloat32, channels=1, rate=samplingRate, output=True)
-    stream.write(samples)
-
-    # thread for listening here
-
-    stream.stop_stream()
-    stream.close()
-
-
-# def play_data(data, start_freq, freq_step, byte_per_transmit):
-#     p = pyaudio.PyAudio()
-#     freq_list = make_frequencies_map(start_freq, freq_step, byte_per_transmit)
-#     print(freq_list, data)
-
-#     def play_thread(freq):
-#         play_frequency(freq, p=p)
-
-#     threads = []
-#     for item in data:
-#         for i, bit in enumerate(item):
-#             if bit == '1':
-#                 thread = threading.Thread(target=play_thread, args=(freq_list[i],))
-#                 threads.append(thread)
-#                 thread.start()
-
-#     for thread in threads:
-#         thread.join()
-
-#     p.terminate()
 
 def play_data(data, start_freq, freq_step, bytes_per_transmit, p):
     freq_list = calculate_send_frequencies(start_freq, freq_step, bytes_per_transmit)
 
-    threads = []
-    for item in data:
-        for i, bit in enumerate(item):
+    for byte in data:
+        print(byte)
+        samples = None
+        for i, bit in enumerate(byte):
             if bit == '1':
-                thread = threading.Thread(target=play_frequency, args=(freq_list[i], p, 10.0))
-                threads.append(thread)
-                thread.start()
+                print(freq_list[i])
+                s = .125 * np.sin(2 * np.pi * np.arange(44100 * 10.0) * freq_list[i] / 44100)
+                if samples is None:
+                    samples = s
+                else:
+                    samples = np.add(samples, s)
+        if samples is not None:
+            print(samples)
+            stream = p.open(format=pyaudio.paFloat32, channels=1, rate=44100, output=True)
+            stream.write(samples.astype(np.float32).tobytes())
+            stream.stop_stream()
+            stream.close()
 
-    for thread in threads:
-        thread.join()
-
-# def listen_for_confirmation(stream):
-#     # Logic to listen and decode the confirmation data
-#     # This function should run in its own thread
-
-#     recieved_data = stream.read(1024)
+def receive_string(binary):
+    binary_string = ''.join(binary)
+    try:
+        print(chr(int(binary_string, 2)))
+    except ValueError:
+        print("Error: Invalid binary data")

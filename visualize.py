@@ -9,6 +9,8 @@ import numpy as np
 import pyaudio
 import matplotlib.pyplot as plt
 
+import utils as u
+
 
 class Test(object):
 
@@ -44,9 +46,9 @@ class Test(object):
         scaled_spectrum = scaled_spectrum / (np.linalg.norm(scaled_spectrum) + 1e-16)
 
         # FIXME: update to self values, given if ur a sender or receiver
-        starting_freq = 18000
+        starting_freq = 19800
         end_freq = 20000
-        freq_to_index_ratio = (self.CHUNK) / self.RATE
+        freq_to_index_ratio = self.CHUNK / self.RATE
         # only accept the scaled spectrum from our starting range to 20000 Hz
         starting_range_index = int(starting_freq * freq_to_index_ratio)
         ending_range_index = int(end_freq * freq_to_index_ratio)
@@ -59,6 +61,11 @@ class Test(object):
 
         freqs = [int((indices[i] + starting_range_index) / freq_to_index_ratio) for i in range(len(indices))]
         print(freqs)
+
+        p = u.frequencies_to_bytes(freqs, u.calculate_send_frequencies(19800, 200, 1))
+        data = p[:8]
+        print(data)
+        u.receive_string(data)
 
         # get the n indices of the max peaks, within our confined spectrum
         # FIXME: update to self values
