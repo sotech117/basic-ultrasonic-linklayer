@@ -71,8 +71,7 @@ class Recv:
 
         while True:
             data = self.read_audio_stream()
-            recv_freq_range = self.freq_range / 2
-            bits = wave_to_bits(data, self.start_freq, recv_freq_range, self.bytes_per_transmit)
+            bits = wave_to_bits(data, self.start_freq, self.freq_range, self.bytes_per_transmit)
 
             # handle the data flags
             is_data_flag = bits[-1]
@@ -100,7 +99,7 @@ class Recv:
                 # FIXME: what to do with buffer?
                 # for now print buffer as string
                 buffer_as_string = ''.join([utils.receive_string(byte) for byte in recv_buffer])
-                print("recv_buffer: ", buffer_as_string)
+                print("received data: ", buffer_as_string)
 
                 # clear data structure & buffer
                 continue

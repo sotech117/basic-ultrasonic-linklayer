@@ -68,11 +68,9 @@ def play_data(data, start_freq, freq_step, bytes_per_transmit, stream):
     flip_flag = 0  # TODO: make this global between plays
     for byte in data:
         byte = byte + str(flip_flag) + '1'
-        print(byte)
         samples = None
         for i, bit in enumerate(byte):
             if bit == '1':
-                print(freq_list[i])
                 s = .125 * np.sin(2 * np.pi * np.arange(44100 * send_duration) * freq_list[i] / 44100)
                 if samples is None:
                     samples = s
@@ -86,8 +84,8 @@ def play_data(data, start_freq, freq_step, bytes_per_transmit, stream):
 def receive_string(binary):
     binary_string = ''.join(binary)
     try:
-        print(chr(int(binary_string, 2)))
+        # print(chr(int(binary_string, 2)))
         return chr(int(binary_string, 2))
     except ValueError:
-        print("Warn: Invalid binary data: ", binary_string)
-        return 'X'
+        # print("Warn: Invalid binary data: ", binary_string)
+        return ''

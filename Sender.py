@@ -143,8 +143,7 @@ class LinkLayer:
 
     def transmit_string(self, data):
         data_list = string_to_binary(data)
-        send_freq_range = self.freq_range / 2
-        play_data(data_list, self.start_freq, send_freq_range, self.bytes_per_transmit, self.stream)
+        play_data(data_list, self.start_freq, self.freq_range, self.bytes_per_transmit, self.stream)
 
     def send_data(self):
         while True:
