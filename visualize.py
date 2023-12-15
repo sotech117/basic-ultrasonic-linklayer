@@ -46,24 +46,29 @@ class Test(object):
         # FIXME: update to self values, given if ur a sender or receiver
         starting_freq = 18000
         end_freq = 20000
-        freq_to_index_ratio = (self.CHUNK - 1) / self.RATE
+        freq_to_index_ratio = (self.CHUNK) / self.RATE
         # only accept the scaled spectrum from our starting range to 20000 Hz
         starting_range_index = int(starting_freq * freq_to_index_ratio)
         ending_range_index = int(end_freq * freq_to_index_ratio)
         print(starting_freq, end_freq, starting_range_index, ending_range_index)
         restricted_spectrum = scaled_spectrum[starting_range_index:ending_range_index + 1]
 
+        # normalize the restricted spectrum
+        indices = np.argwhere(restricted_spectrum > .125)
+        print(indices)
+
+        freqs = [int((indices[i] + starting_range_index) / freq_to_index_ratio) for i in range(len(indices))]
+        print(freqs)
+
         # get the n indices of the max peaks, within our confined spectrum
         # FIXME: update to self values
         bytes = 1
         num_bits = bytes * 8 + 2
-        top8_indices = np.argpartition(restricted_spectrum, -num_bits)[-num_bits:]
-
-        # map the top 8 to indices to frequencies
-        top8_freqs = [int((top8_indices[i] + starting_freq) / freq_to_index_ratio) for i in range(len(top8_indices))]
+        if num_bits > len(restricted_spectrum):
+            print("ERROR: num_bits > len(restricted_spectrum)")
 
         # print(index_to_freq[max_index], max_index, max_index * self.RATE / (self.CHUNK - 1))
-        return top8_freqs[0], scaled_spectrum
+        return freqs, scaled_spectrum
 
     def read_audio_stream(self):
         data = self.stream.read(self.CHUNK)
@@ -75,8 +80,6 @@ class Test(object):
         while not self.pause:
             waveform = self.read_audio_stream()
             freq_max, scaled_spectrum = self.get_fundamental_frequency(waveform)
-            if freq_max not in self.seenvalues:
-                print(freq_max)
 
             # update figure canvas if wanted
             if graphics:

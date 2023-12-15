@@ -86,7 +86,7 @@ def transmit_string(data):
                 freq_map[start_freq + j * 250] = 1.0
         
         # print(freq_map)
-        play_frequencies_separately(freq_map, duration=0.5)
+        play_frequencies_separately(freq_map, duration=1000)
 
 """
 :param data: A list of peak frequencies.
@@ -117,14 +117,14 @@ print(decoded_string)
 
 
 class LinkLayer:
-    def __init__(self, start_freq=18000, freq_step=250):
+    def __init__(self, start_freq=18000):
         self.start_freq = start_freq
-        self.freq_step = freq_step
+        self.freq_range = 1000
         self.sampling_rate = 44100
         self.p = pyaudio.PyAudio()
         self.isReceiving = False
         self.isEstablished = False
-        self.byte_per_transmit = 8
+        self.bytes_per_transmit = 1
         self.freq_range = 1000
 
     def transmit_string(self, data):
@@ -142,7 +142,7 @@ class LinkLayer:
             
         #     # print(freq_map)
         #     play_frequencies_separately(freq_map, duration=0.5)
-        play_data(data_list, self.start_freq, self.freq_range, self.byte_per_transmit, self.p)
+        play_data(data_list, self.start_freq, self.freq_range, self.bytes_per_transmit, self.p)
 
 
     def receive_string(self, data):
