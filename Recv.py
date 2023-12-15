@@ -5,7 +5,7 @@ from utils import *
 # Receiver Class: Used to continuos listen for sound waves in the corresponding frequency range
 # and decode the data being sent
 class Recv:
-    def __init__(self, start_freq=19000):
+    def __init__(self, start_freq=18500):
         # initialize frequency related variables with default values
         self.start_freq = start_freq
         self.freq_range = 500
