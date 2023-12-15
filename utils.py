@@ -30,11 +30,6 @@ def wave_to_bits(wave, starting_freq, freq_range, bytes_per_transmit, chunk=4096
     # convert the frequencies to bits
     data = frequencies_to_bits(freqs, calculate_send_frequencies(starting_freq, freq_range, bytes_per_transmit))
 
-    # TODO: remove
-    byte = data[:8]
-    if data[-1] == '1':
-        receive_string(byte)
-
     return data
 
 
