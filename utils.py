@@ -63,7 +63,7 @@ def frequencies_to_bits(frequencies, expected_freqs):
 def play_data(data, start_freq, freq_step, bytes_per_transmit, stream):
     freq_list = calculate_send_frequencies(start_freq, freq_step, bytes_per_transmit)
 
-    send_duration = 1.0
+    send_duration = 1.5
 
     flip_flag = 0  # TODO: make this global between plays
     for byte in data:

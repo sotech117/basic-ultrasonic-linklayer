@@ -2,18 +2,16 @@ import struct
 
 import numpy as np
 import pyaudio
-import threading
 
-import utils
 from utils import *
 import time
 from collections import Counter
 
 
 class Recv:
-    def __init__(self, start_freq=18000):
+    def __init__(self, start_freq=5000):
         self.start_freq = start_freq
-        self.freq_range = 2000
+        self.freq_range = 500
         self.sampling_rate = 44100
         self.p = pyaudio.PyAudio()
         self.bytes_per_transmit = 1
@@ -35,13 +33,6 @@ class Recv:
             output=True,
             frames_per_buffer=self.CHUNK,
         )
-        self.streamSend = self.p.open(
-            format=self.FORMAT,
-            channels=self.CHANNELS,
-            rate=self.RATE,
-            output=True,
-        )
-
 
     def read_audio_stream(self):
         data = self.stream.read(self.CHUNK)
@@ -72,68 +63,31 @@ class Recv:
         return safe_byte
 
     def listen(self):
-        prev_is_data_flag = '0'
-        prev_is_new_byte_flag = '0'
+        char_counter = Counter()
+        start_time = time.time()
+        word = ''
+        try:
+            while True:
+                current_time = time.time()
+                if current_time - start_time >= 1.5:  # Every second
+                    # Find the most common character
+                    most_common_char, _ = char_counter.most_common(1)[0] if char_counter else ('', 0)
+                    # print(f"Most common character in the last second: {most_common_char}")
+                    word += most_common_char
+                    print(f"Accumulated word: {word}")
+                    char_counter.clear()  # Reset for the next second
+                    start_time = current_time
 
-        bytes_seen = []
-        recv_buffer = []
+                data = self.read_audio_stream()
+                
+                recv_freq_range = self.freq_range / 2
+                bits = wave_to_bits(data, self.start_freq, recv_freq_range, self.bytes_per_transmit)
+                letter = receive_string(bits[:-2])
+                if letter:
+                    char_counter[letter] += 1
 
-        while True:
-            data = self.read_audio_stream()
-            recv_freq_range = self.freq_range / 2
-            bits = wave_to_bits(data, self.start_freq, recv_freq_range, self.bytes_per_transmit)
-
-            # handle the data flags
-            is_data_flag = bits[-1]
-            is_new_byte_flag = bits[-2]
-
-            if prev_is_data_flag == '0' and is_data_flag == '1':
-                prev_is_data_flag = is_data_flag
-                # just started receiving data
-                bytes_seen = []
-                recv_buffer = []
-
-            is_data_flag = bits[-1]
-            if prev_is_data_flag == '0' and is_data_flag == '0':
-                prev_is_data_flag = is_data_flag
-
-                # just waiting for new data
-                continue
-
-            if prev_is_data_flag == '1' and is_data_flag == '0':
-                prev_is_data_flag = is_data_flag
-
-                # just finished the last byte of data, add it to buffer, then write buffer to terminal
-                recv_buffer.append(self.safe_check_byte(bytes_seen))
-
-                # FIXME: what to do with buffer?
-                # for now print buffer as string
-                buffer_as_string = ''.join([utils.receive_string(byte) for byte in recv_buffer])
-                print("recv_buffer: ", buffer_as_string)
-
-                # clear data structure & buffer
-                continue
-
-            # at this point, we know we are receiving data
-            if prev_is_new_byte_flag == is_new_byte_flag:
-                prev_is_new_byte_flag = is_new_byte_flag
-
-                # we are still receiving the same byte, store it in the data structure
-                byte = bits[:-2]
-                bytes_seen.append(byte)
-                continue
-            else:
-                prev_is_new_byte_flag = is_new_byte_flag
-
-                # we are receiving a new byte, so we need to write the old byte to the recv buffer
-                recv_buffer.append(self.safe_check_byte(bytes_seen))
-                # clear the data structure
-                bytes_seen = []
-
-                # append the new byte to the data structure
-                byte = bits[:-2]
-                bytes_seen.append(byte)
-                continue
+        except KeyboardInterrupt:
+            print("Stopping...")
 
 def main():
     recv = Recv()

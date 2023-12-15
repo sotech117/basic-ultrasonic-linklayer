@@ -10,25 +10,10 @@ from collections import Counter
 return: A string of characters.
 """
 
-
-def receive_string(data, start_freq=19000, freq_step=250):
-    binary = ['0'] * 8
-
-    for item in data:
-        freqPosition = (item - start_freq) // freq_step
-        if 0 <= freqPosition < 8: binary[freqPosition] = '1'
-
-    binary_string = ''.join(binary)
-    try:
-        return chr(int(binary_string, 2))
-    except ValueError:
-        return "Error: Invalid binary data"
-
-
 class LinkLayer:
-    def __init__(self, start_freq=18000):
+    def __init__(self, start_freq=5000):
         self.start_freq = start_freq
-        self.freq_range = 2000
+        self.freq_range = 500
         self.sampling_rate = 44100
         self.p = pyaudio.PyAudio()
         self.isReceiving = False
@@ -52,38 +37,8 @@ class LinkLayer:
                     self.stream.close()
                     break
                 self.transmit_string(user_input)
-                if not self.listen(user_input): self.transmit_string(user_input)
             else:
                 print("Currently receiving data, please wait...")
-
-    def read_audio_stream(self):
-        data = self.streamListen.read(self.CHUNK)
-        data_int = struct.unpack(str(self.CHUNK) + 'i', data)
-        return data_int
-    
-
-    def listen(self, data):
-        char_counter = Counter()
-        start_time = time.time()
-        word = ''
-        current_time = time.time()
-        if current_time - start_time >= 1:  # Every second
-            # Find the most common character
-            most_common_char, _ = char_counter.most_common(1)[0] if char_counter else ('', 0)
-            # print(f"Most common character in the last second: {most_common_char}")
-            word += most_common_char
-            print(f"Accumulated word: {word}")
-            char_counter.clear()  # Reset for the next second
-            start_time = current_time
-
-        # wait half a second
-        time.sleep(.5)
-        audio_data = self.read_audio_stream()
-        recv_freq_range = self.freq_range / 2
-        list, letter = wave_to_bits(audio_data, self.start_freq, recv_freq_range, self.bytes_per_transmit)
-
-        if letter == data: return True
-        return False
 
 def main():
     link_layer = LinkLayer()
