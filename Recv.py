@@ -9,9 +9,9 @@ from utils import *
 
 
 class Recv:
-    def __init__(self, start_freq=18000):
+    def __init__(self, start_freq=19000):
         self.start_freq = start_freq
-        self.freq_range = 2000
+        self.freq_range = 500
         self.sampling_rate = 44100
         self.p = pyaudio.PyAudio()
         self.bytes_per_transmit = 1
@@ -82,6 +82,7 @@ class Recv:
                 # just started receiving data
                 bytes_seen = []
                 recv_buffer = []
+                print("started receiving data!")
 
             is_data_flag = bits[-1]
             if prev_is_data_flag == '0' and is_data_flag == '0':
@@ -99,7 +100,7 @@ class Recv:
                 # FIXME: what to do with buffer?
                 # for now print buffer as string
                 buffer_as_string = ''.join([utils.receive_string(byte) for byte in recv_buffer])
-                print("received data: ", buffer_as_string)
+                print("data received: ", buffer_as_string)
 
                 # clear data structure & buffer
                 continue

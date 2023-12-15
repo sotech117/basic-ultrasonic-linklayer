@@ -131,9 +131,9 @@ def receive_string(data, start_freq=18000, freq_step=250):
 
 
 class LinkLayer:
-    def __init__(self, start_freq=18000):
+    def __init__(self, start_freq=19000):
         self.start_freq = start_freq
-        self.freq_range = 2000
+        self.freq_range = 500
         self.sampling_rate = 44100
         self.p = pyaudio.PyAudio()
         self.isReceiving = False
