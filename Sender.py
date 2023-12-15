@@ -11,9 +11,12 @@ Play a single frequency.
 :param duration: Duration of the sound in seconds.
 :param samplingRate: Sampling rate in Hz.
 """
+
+
 def play_frequency(freq, amplitude, duration=1.0, samplingRate=44100, p=None):
     # Generate sample for the given frequency as a float32 array
-    samples = (amplitude * np.sin(2*np.pi*np.arange(samplingRate*duration)*freq/samplingRate)).astype(np.float32).tobytes()
+    samples = (amplitude * np.sin(2 * np.pi * np.arange(samplingRate * duration) * freq / samplingRate)).astype(
+        np.float32).tobytes()
 
     # Open stream
     stream = p.open(format=pyaudio.paFloat32,
@@ -37,6 +40,8 @@ Use threads to play multiple frequencies simultaneously.
 :param duration: Duration of the sound in seconds.
 :param samplingRate: Sampling rate in Hz.
 """
+
+
 def play_frequencies_separately(freq_map, duration=1.0, samplingRate=44100):
     p = pyaudio.PyAudio()
 
@@ -57,11 +62,26 @@ def play_frequencies_separately(freq_map, duration=1.0, samplingRate=44100):
 # data = "01101000 01100101 01101100 01101100 01101111"
 
 # convert string to binary representation
+"""
+:param data: A string of characters.
+:return: A list of binary strings.
+"""
 
-# transmit string 
+
+def string_to_binary(data):
+    data_list = []
+    for char in data:
+        binary_representation = format(ord(char), 'b').zfill(8)
+        data_list.append(binary_representation)
+    return data_list
+
+
+# transmit string
 """
 :param data: A string of characters.
 """
+
+
 def transmit_string(data):
     data_list = string_to_binary(data)
 
@@ -71,17 +91,20 @@ def transmit_string(data):
         for j in range(len(data_list[i])):
             if data_list[i][j] == "0":
                 freq_map[start_freq + j * 250] = 0.0
-            
+
             if data_list[i][j] == "1":
                 freq_map[start_freq + j * 250] = 1.0
-        
+
         # print(freq_map)
         play_frequencies_separately(freq_map, duration=1000)
+
 
 """
 :param data: A list of peak frequencies.
 return: A string of characters.
 """
+
+
 def receive_string(data, start_freq=18000, freq_step=250):
     binary = ['0'] * 8
 
@@ -95,6 +118,7 @@ def receive_string(data, start_freq=18000, freq_step=250):
     except ValueError:
         return "Error: Invalid binary data"
 
+
 # Example usage
 # data for the letter h
 # # 01101000
@@ -107,36 +131,33 @@ def receive_string(data, start_freq=18000, freq_step=250):
 
 
 class LinkLayer:
-    def __init__(self, start_freq=19800):
+    def __init__(self, start_freq=19500):
         self.start_freq = start_freq
-        self.freq_range = 200
+        self.freq_range = 500
         self.sampling_rate = 44100
         self.p = pyaudio.PyAudio()
         self.isReceiving = False
         self.isEstablished = False
         self.bytes_per_transmit = 1
+        self.stream = self.p.open(format=pyaudio.paFloat32, channels=1, rate=44100, output=True)
 
     def transmit_string(self, data):
         data_list = string_to_binary(data)
-        play_data(data_list, self.start_freq, self.freq_range, self.bytes_per_transmit, self.p)
-        
+        send_freq_range = self.freq_range / 2
+        play_data(data_list, self.start_freq, send_freq_range, self.bytes_per_transmit, self.stream)
+
     def send_data(self):
         while True:
             if not self.isReceiving:
                 user_input = input("Enter data to send: ")
                 if user_input == "exit" or user_input == "q":
+                    self.stream.stop_stream()
+                    self.stream.close()
                     break
                 self.transmit_string(user_input)
             else:
                 print("Currently receiving data, please wait...")
 
-    
-# take in range width, the number of bytes, and the bytes themselves, and starting freq
-
-# cmdline args: data, start freq, bytes per transmit, frequency range
-# 18500, 1000 range 
-
-# vlistener takes in no data.
 
 def main():
     link_layer = LinkLayer()
@@ -146,6 +167,7 @@ def main():
 
     # Start the threads
     send_thread.start()
+
 
 if __name__ == "__main__":
     main()
