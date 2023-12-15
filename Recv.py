@@ -1,29 +1,26 @@
 import struct
-
-import numpy as np
 import pyaudio
-import threading
-
-import utils
 from utils import *
 
-
+# Receiver Class: Used to continuos listen for sound waves in the corresponding frequency range
+# and decode the data being sent
 class Recv:
     def __init__(self, start_freq=19000):
+        # initialize frequency related variables with default values
         self.start_freq = start_freq
         self.freq_range = 500
         self.sampling_rate = 44100
         self.p = pyaudio.PyAudio()
         self.bytes_per_transmit = 1
 
-
-        # TODO: use stream to send back the data
+        # initialize stream variables
         self.CHUNK = 2048 * 2
         self.FORMAT = pyaudio.paInt32
         self.CHANNELS = 1
         self.RATE = 44100
         self.pause = False
-        # stream object
+
+        # initialize stream object
         self.p = pyaudio.PyAudio()
         self.stream = self.p.open(
             format=self.FORMAT,
@@ -34,14 +31,13 @@ class Recv:
             frames_per_buffer=self.CHUNK,
         )
 
+    # reads and unpacks the incoming audio stream
     def read_audio_stream(self):
         data = self.stream.read(self.CHUNK)
         data_int = struct.unpack(str(self.CHUNK) + 'i', data)
         return data_int
 
-    def print_data(self, data):
-        print(data)
-
+    # checks if the byte is safe to add to the data structure
     def safe_check_byte(self, bytes_seen):
         safe_byte = []
 
@@ -62,6 +58,8 @@ class Recv:
 
         return safe_byte
 
+    # listens for incoming data
+    # uses two extra bits to handle data transmission protocol
     def listen(self):
         prev_is_data_flag = '0'
         prev_is_new_byte_flag = '0'
@@ -99,7 +97,7 @@ class Recv:
 
                 # FIXME: what to do with buffer?
                 # for now print buffer as string
-                buffer_as_string = ''.join([utils.receive_string(byte) for byte in recv_buffer])
+                buffer_as_string = ''.join([receive_string(byte) for byte in recv_buffer])
                 print("data received: ", buffer_as_string)
 
                 # clear data structure & buffer
@@ -125,8 +123,6 @@ class Recv:
                 byte = bits[:-2]
                 bytes_seen.append(byte)
                 continue
-
-
 
 
 def main():
