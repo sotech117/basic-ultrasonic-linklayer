@@ -30,8 +30,6 @@ def frequencies_to_bytes(frequencies, expected_freqs):
         for i in range(len(frequencies)):
             # clamp the range around the frequency to the frequency
             if expected_freqs[i] - plus_minus <= freq < expected_freqs[i] + plus_minus:
-                if byte_list[i] == 1:
-                    return None  # bad data, return nullish list
                 byte_list[i] = 1
 
     return byte_list
